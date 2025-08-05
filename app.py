@@ -1,10 +1,11 @@
+# app.py (Timetable Image Generation API - Final Fix)
 import streamlit as st
 import requests
 import base64
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 import random
 import io
-import json # 导入 json 库用于手动转换
+import json
 
 # =========== 1. 课表生成核心逻辑 (从你的脚本移植) ===========
 def generate_timetable_image_in_memory(style_name='cool'):
@@ -100,9 +101,12 @@ if endpoint == "generate-timetable":
     style = query_params.get("style", "cool")
     image_data = generate_timetable_image_in_memory(style)
     
-    # --- 关键修正：直接打印 JSON 字符串，绕过 Streamlit 的显示组件 ---
-    # 这种方法会返回一个纯净的文本响应，而不是一个完整的 HTML 页面。
-    print(json.dumps(image_data))
+    # 使用 st.json() 来确保返回正确的 Content-Type 头
+    st.json(image_data)
+    
+    # --- 关键修正 ---
+    # 在返回 JSON 后，立即停止脚本执行，防止 Streamlit 输出任何额外的 HTML。
+    st.stop()
     
 else:
     # --- 如果不是 API 请求，则正常显示网页界面 ---
@@ -122,9 +126,11 @@ else:
     st.subheader("👨‍💻 Python 调用脚本")
     st.write("将以下完整代码复制到你的本地 Python 环境中运行，即可调用 API 并在当前目录生成图片。")
 
+    # --- 关键修正：更新显示的客户端代码，使其在出错时打印更详细的信息 ---
     client_code = f"""
 import requests
 import base64
+import json
 
 # API 的公网地址
 API_URL = "{api_url}"
@@ -136,7 +142,7 @@ try:
     response = requests.get(API_URL, timeout=45) # 生成图片可能需要更长的时间
     response.raise_for_status()
 
-    # 解析返回的 JSON 数据
+    # 首先尝试解析 JSON
     data = response.json()
     filename = data.get("filename")
     filedata_base64 = data.get("filedata_base64")
@@ -151,9 +157,15 @@ try:
         
         print(f"✅ 图片已成功生成并保存为: {{filename}}")
     else:
-        print("❌ API 返回的数据格式不正确或缺少内容。")
+        print("❌ API 返回了 JSON，但内容不符合预期。")
         print("返回内容:", data)
 
+except json.JSONDecodeError:
+    print("❌ JSON 解析失败！服务器返回的不是有效的 JSON。")
+    print("   以下是服务器返回的完整内容：")
+    print("---------------------------------")
+    print(response.text)
+    print("---------------------------------")
 except requests.exceptions.RequestException as e:
     print(f"❌ 请求失败: {{e}}")
 
