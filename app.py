@@ -1,10 +1,10 @@
-# app.py (Timetable Image Generation API - Final Fix)
 import streamlit as st
 import requests
 import base64
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 import random
 import io
+import json # 导入 json 库用于手动转换
 
 # =========== 1. 课表生成核心逻辑 (从你的脚本移植) ===========
 def generate_timetable_image_in_memory(style_name='cool'):
@@ -99,11 +99,11 @@ if endpoint == "generate-timetable":
     # 如果是 API 请求，则执行 API 逻辑
     style = query_params.get("style", "cool")
     image_data = generate_timetable_image_in_memory(style)
-    st.json(image_data)
     
-    # --- 关键修正 ---
-    # 在返回 JSON 后，立即停止脚本执行，防止 Streamlit 输出任何额外的 HTML。
-    st.stop() 
+    # --- 关键修正：直接打印 JSON 字符串，绕过 Streamlit 的显示组件 ---
+    # 这种方法会返回一个纯净的文本响应，而不是一个完整的 HTML 页面。
+    print(json.dumps(image_data))
+    
 else:
     # --- 如果不是 API 请求，则正常显示网页界面 ---
     st.set_page_config(page_title="课表图片生成API", page_icon="🎨", layout="wide")
