@@ -1,3 +1,4 @@
+# app.py (Timetable Image Generation API - Final Fix)
 import streamlit as st
 import requests
 import base64
@@ -6,18 +7,13 @@ import random
 import io
 
 # =========== 1. 课表生成核心逻辑 (从你的脚本移植) ===========
-# 将你的脚本逻辑封装在一个函数中，使其可以被API调用
-
 def generate_timetable_image_in_memory(style_name='cool'):
-    """
-    在内存中生成课表图片，并返回 Base64 编码的字符串。
-    """
+    # ... (这部分的所有代码都和你提供的一样，保持不变) ...
     # --- 全局配置 ---
     IMG_WIDTH, IMG_HEIGHT, PADDING = 1200, 1800, 50
     HEADER_HEIGHT, LEFT_AXIS_WIDTH = 80, 60
     DAYS = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
     TIME_SLOTS = [f"{i}:00" for i in range(8, 22)]
-
     # --- 风格与调色板 ---
     STYLES = {
         'modern': {'bg_colors': ('#F0F2F5', '#E6E9EE'), 'line_color': '#D8DCE3', 'font_color': '#333740', 'text_on_course_color': '#2D3436', 'palette': ['#D4E2F4', '#F4D9D4', '#D4F4E2', '#F4F1D4', '#E2D4F4', '#D4F4F1']},
@@ -25,14 +21,11 @@ def generate_timetable_image_in_memory(style_name='cool'):
         'cool': {'bg_colors': ('#282C34', '#21252B'), 'line_color': '#3E444F', 'font_color': '#ABB2BF', 'text_on_course_color': '#FFFFFF', 'palette': ['#61AFEF', '#E06C75', '#98C379', '#E5C07B', '#C678DD', '#56B6C2']},
         'fresh': {'bg_colors': ('#F3F9FB', '#E8F3F6'), 'line_color': '#DAE6EB', 'font_color': '#3E667A', 'text_on_course_color': '#0B4F6C', 'palette': ['#A8DADC', '#F191A2', '#83D4A3', '#FADF98', '#B3B8E3', '#98DFF0']},
     }
-    # 如果请求的风格不存在，则使用 'cool' 作为默认值
     style = STYLES.get(style_name, STYLES['cool'])
-    style['font_path'] = 'SourceHanSansSC-Regular.otf' # 脚本中定义的字体路径
+    style['font_path'] = 'SourceHanSansSC-Regular.otf'
     style['font_bold_path'] = 'SourceHanSansSC-Bold.otf'
-
     # --- 示例数据 ---
     sample_courses = [("高等数学", 1, "8:00", "9:40", "教A-101"),("Python编程实践", 1, "14:00", "16:30", "实验楼302"),("大学英语", 2, "10:00", "11:40", "文科楼203"),("线性代数", 3, "8:00", "9:40", "教A-101"),("数据结构与算法", 3, "14:00", "16:30", "实验楼304"),("体育（网球）", 4, "15:00", "16:40", "体育馆"),("操作系统原理", 5, "10:00", "12:30", "实验楼501"),("电影鉴赏", 5, "19:00", "20:40", "艺术楼放映厅"),("周末自习", 6, "9:00", "17:00", "图书馆")]
-
     # --- 辅助函数 ---
     def create_background(w, h, colors):
         base = Image.new('RGB', (w, h), colors[0])
@@ -42,21 +35,18 @@ def generate_timetable_image_in_memory(style_name='cool'):
         mask.putdata(mask_data)
         base.paste(top, (0, 0), mask)
         return base
-
     def draw_3d_effect_shadow(img, xy, r):
         x1, y1, x2, y2 = [int(v) for v in xy]
         shadow_canvas = Image.new('RGBA', img.size, (0, 0, 0, 0))
         ImageDraw.Draw(shadow_canvas).rounded_rectangle((x1, y1 + 10, x2, y2 + 10), r, (0, 0, 0, 40))
         shadow_canvas = shadow_canvas.filter(ImageFilter.GaussianBlur(8))
         img.paste(shadow_canvas, (0, 0), shadow_canvas)
-
     def get_text_size(draw, text, font):
         if hasattr(draw, 'textbbox'):
             bbox = draw.textbbox((0, 0), text, font=font)
             return bbox[2] - bbox[0], bbox[3] - bbox[1]
         else:
             return draw.textsize(text, font=font)
-
     # --- 主绘图逻辑 ---
     img = create_background(IMG_WIDTH, IMG_HEIGHT, style['bg_colors']).convert('RGBA')
     draw = ImageDraw.Draw(img)
@@ -67,11 +57,9 @@ def generate_timetable_image_in_memory(style_name='cool'):
         font_course_bold = ImageFont.truetype(style['font_bold_path'], 16)
     except IOError:
         font_regular, font_bold, font_course, font_course_bold = [ImageFont.load_default()] * 4
-
     grid_x, grid_y = PADDING + LEFT_AXIS_WIDTH, PADDING + HEADER_HEIGHT
     grid_w, grid_h = IMG_WIDTH - grid_x - PADDING, IMG_HEIGHT - grid_y - PADDING
     col_w, row_h = grid_w / len(DAYS), grid_h / len(TIME_SLOTS)
-
     for i, day in enumerate(DAYS):
         text_w, text_h = get_text_size(draw, day, font_bold)
         draw.text((grid_x + i * col_w + (col_w - text_w) / 2, PADDING + (HEADER_HEIGHT - text_h) / 2), day, style['font_color'], font=font_bold)
@@ -79,7 +67,6 @@ def generate_timetable_image_in_memory(style_name='cool'):
         text_w, _ = get_text_size(draw, time, font_regular)
         draw.text((grid_x - text_w - 15, grid_y + i * row_h - 8), time, style['font_color'], font=font_regular)
         draw.line([(grid_x - 5, grid_y + i * row_h), (grid_x + grid_w, grid_y + i * row_h)], style['line_color'], 1)
-
     course_colors, palette = {}, list(style['palette'])
     random.shuffle(palette)
     for name, day_idx, start_t, end_t, loc in sample_courses:
@@ -91,20 +78,17 @@ def generate_timetable_image_in_memory(style_name='cool'):
         x2, y2 = grid_x + day_idx * col_w - 8, grid_y + end_row * row_h - 4
         draw_3d_effect_shadow(img, (x1, y1, x2, y2), 15)
         draw.rounded_rectangle((x1, y1, x2, y2), 15, course_colors[name])
-        
         text_w, _ = get_text_size(draw, name, font_course_bold)
         draw.text((x1 + (x2 - x1 - text_w) / 2, y1 + 10), name, style['text_on_course_color'], font=font_course_bold)
         loc_text = f"@{loc}"
         text_w, _ = get_text_size(draw, loc_text, font_course)
         draw.text((x1 + (x2 - x1 - text_w) / 2, y1 + 35), loc_text, style['text_on_course_color'], font=font_course)
-
     # --- 将图片保存到内存并编码 ---
     final_img = img.convert('RGB')
     img_buffer = io.BytesIO()
     final_img.save(img_buffer, format="PNG")
     img_bytes = img_buffer.getvalue()
     img_base64 = base64.b64encode(img_bytes).decode('utf-8')
-    
     return {"filename": f"timetable_{style_name}.png", "filedata_base64": img_base64}
 
 # =========== 2. 主程序逻辑 ===========
@@ -116,6 +100,10 @@ if endpoint == "generate-timetable":
     style = query_params.get("style", "cool")
     image_data = generate_timetable_image_in_memory(style)
     st.json(image_data)
+    
+    # --- 关键修正 ---
+    # 在返回 JSON 后，立即停止脚本执行，防止 Streamlit 输出任何额外的 HTML。
+    st.stop() 
 else:
     # --- 如果不是 API 请求，则正常显示网页界面 ---
     st.set_page_config(page_title="课表图片生成API", page_icon="🎨", layout="wide")
@@ -171,4 +159,3 @@ except requests.exceptions.RequestException as e:
 
 """
     st.code(client_code, language="python")
-
