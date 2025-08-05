@@ -101,12 +101,9 @@ if endpoint == "generate-timetable":
     style = query_params.get("style", "cool")
     image_data = generate_timetable_image_in_memory(style)
     
-    # 使用 st.json() 来确保返回正确的 Content-Type 头
-    st.json(image_data)
-    
-    # --- 关键修正 ---
-    # 在返回 JSON 后，立即停止脚本执行，防止 Streamlit 输出任何额外的 HTML。
-    st.stop()
+    # --- 关键修正：用 st.write() 直接输出 JSON 字符串 ---
+    # 这种方法会返回一个纯净的文本响应，而不是一个完整的 HTML 页面。
+    st.write(json.dumps(image_data))
     
 else:
     # --- 如果不是 API 请求，则正常显示网页界面 ---
@@ -126,7 +123,6 @@ else:
     st.subheader("👨‍💻 Python 调用脚本")
     st.write("将以下完整代码复制到你的本地 Python 环境中运行，即可调用 API 并在当前目录生成图片。")
 
-    # --- 关键修正：更新显示的客户端代码，使其在出错时打印更详细的信息 ---
     client_code = f"""
 import requests
 import base64
